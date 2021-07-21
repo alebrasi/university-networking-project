@@ -43,12 +43,6 @@ class IP:
                 return False
         return True
 
-    def get_ip_in_byte_array(self):
-        byte_array = []
-        for octet in self.ip_octets:
-            byte_array.append(bytes(octet))
-        return byte_array
-
     def encode_ip_and_subnet(self):
         """
         Encodes the ip and the subnet mask

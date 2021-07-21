@@ -1,6 +1,8 @@
 import socket
 import signal
 import sys
+import time
+import struct
 from IP import IP
 
 SERVER_IP = '10.10.10.2'
@@ -25,6 +27,8 @@ print('Listening for incoming data...')
 while True:
     gateway_connection, address = server.accept()
 
+    finish_time = time.perf_counter()
+
     message = gateway_connection.recv(4096)
 
     #The first 4 bytes are the ip address of the sender
@@ -36,11 +40,15 @@ while True:
     #Creates the IP structure of the sending device
     ip_sender = IP.bytes_to_IP(source_ip, source_subnet)
 
+    #Convert the 4 bytes into a float, which is the time the packet was sent
+    start_time = struct.unpack('f', message[8:12])
+
     #The remaining bytes are the encoded data
-    payload = message[8:]
+    payload = message[12:]
 
     if ip.is_in_same_network(ip_sender):
         print('Data received from gateway {}:'.format(ip_sender.ip))
+        print("Total elapsed time for receiving the TCP packet: {}".format(finish_time - start_time[0]))
         decoded_payload = payload.decode('utf-8').split('\n')
         for i, entry in enumerate(decoded_payload, 1):
             print('{}) {}'.format(i, entry))
