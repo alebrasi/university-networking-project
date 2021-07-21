@@ -20,6 +20,8 @@ def kill_server(sig, frame):
 
 signal.signal(signal.SIGINT, kill_server)
 
+print('Listening for incoming data...')
+
 while True:
     gateway_connection, address = server.accept()
 
