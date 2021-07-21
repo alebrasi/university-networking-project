@@ -1,17 +1,37 @@
 import random
 import datetime
 import socket
+import os
 from IP import IP
 
 class device:
-    def __init__(self, id, ip, gateway_address, gateway_port):
+    def __init__(self, id, ip):
+        """
+        Initialize a new device
+
+        Parameters
+        ----------
+        id : int
+            The id of the device
+        ip : str
+            The ip of the device
+        """
         self.id = id
         self.ip = ip
-        self.gateway_address = gateway_address
-        self.gateway_port = gateway_port
-        self.mesurements_file = 'measures/measures_dev{}.csv'.format(self.id)
+        self.measurements_folder = 'measures'
+        self.mesurements_file = '{}/measures_dev{}.csv'.format(self.measurements_folder, self.id)
 
     def generate_random_measures(self, n_measures):
+        """
+        Generates a csv file containing a number of random measurements
+
+        Parameters
+        ----------
+        n_measurements : int
+            The number of random measures to create
+        """
+        if not os.path.exists(self.measurements_folder):
+            os.mkdir(self.measurements_folder)
         f = open(self.mesurements_file, 'w')
         for i in range(n_measures):
             rand_time = datetime.time(random.randint(0, 23), 
@@ -24,17 +44,37 @@ class device:
         f.close()
 
     def read_measurements(self):
+        """
+        Read the measurements made from the device
+        """
         file = open(self.mesurements_file)
         all_data = file.read()
         file.close()
         return all_data
 
-    def send_data(self):
-        gateway = (self.gateway_address, self.gateway_port)
+    def send_data(self, gateway_address, gateway_port):
+        """
+        Send the collected measurements to the gateway
+
+        Parameters
+        ----------
+        gateway_address = IP
+            The IP of the gateway
+        gateway_port = IP
+            The port of the gateway
+        """
+        gateway = (gateway_address, gateway_port)
         device = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         device.connect(gateway)
 
-        #message = bytes(self.ip.ip_octets) + bytes(self.ip.subnet_octets) + self.read_measurements().encode('utf-8')
+        #The message consists of the encoded ip and subnet mask and the encoded measurements
         message = self.ip.encode_ip_and_subnet() + self.read_measurements().encode('utf-8')
         device.send(message)
         device.close()
+
+    def print_info(self):
+        """
+        Prints the info of the device and the data that is going to send to the gateway
+        """
+        print('Device {} \nIP: {} \nSubnet: {} \n \nData to send: \n{}'
+                .format(self.id, self.ip.ip, self.ip.subnet, self.read_measurements()))
