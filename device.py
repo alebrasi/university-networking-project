@@ -69,10 +69,11 @@ class device:
         device = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         device.connect(gateway)
 
-        #Encode the current time (float) into a byte array
-        start_time_encoded = struct.pack('f', time.perf_counter())
+        #Encode the current time (double) into a byte array
+        encoded_measures = self.read_measurements().encode('utf-8')
+        start_time_encoded = struct.pack('d', time.perf_counter())
         #The message consists of the encoded ip and subnet mask, the encoded start time and the encoded measurements
-        message = self.ip.encode_ip_and_subnet() + start_time_encoded + self.read_measurements().encode('utf-8')
+        message = self.ip.encode_ip_and_subnet() + start_time_encoded + encoded_measures
         device.send(message)
         device.close()
 

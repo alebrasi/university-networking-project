@@ -15,9 +15,10 @@ NUMBER_OF_DIFFERENT_CLIENTS = 4
 
 def send_data_to_server(data_str):
     gateway_server_side = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    data_str_encoded = data_str.encode('utf-8')
     #Message = IP + SUBNET + START TIME + DATA
-    start_time_encoded = struct.pack('f', time.perf_counter())
-    message = GATEWAY_IP_SERVER_INTERFACE.encode_ip_and_subnet() + start_time_encoded + data_str.encode('utf-8')
+    start_time_encoded = struct.pack('d', time.perf_counter())
+    message = GATEWAY_IP_SERVER_INTERFACE.encode_ip_and_subnet() + start_time_encoded + data_str_encoded
 
     gateway_server_side.connect((GATEWAY_DEVICE_SIDE_ADDRESS, SERVER_PORT))
     gateway_server_side.send(message)
@@ -39,43 +40,48 @@ device_list = []
 
 devices = 0
 print('Listening for devices...')
-while True:
-    mess = gateway_devices_side.recv(1024)
+try:
+    while True:
+        mess = gateway_devices_side.recv(1024)
 
-    finish_time = time.perf_counter()
+        finish_time = time.perf_counter()
 
-    #The first 4 bytes are the ip address of the sender
-    source_ip = mess[:4]
+        #The first 4 bytes are the ip address of the sender
+        source_ip = mess[:4]
 
-    #The next 4 bytes are the subnet of the sender
-    source_subnet = mess[4:8]
+        #The next 4 bytes are the subnet of the sender
+        source_subnet = mess[4:8]
 
-    #Creates the IP structure of the sending device
-    ip_sender = IP.bytes_to_IP(source_ip, source_subnet)
+        #Creates the IP structure of the sending device
+        ip_sender = IP.bytes_to_IP(source_ip, source_subnet)
 
-    #Convert the 4 bytes into a float, which is the time the packet was sent
-    start_time = struct.unpack('f', mess[8:12])
+        #Convert the 8 bytes into a double, which is the time the packet was sent
+        start_time = struct.unpack('d', mess[8:16])
 
 
-    #The remaining bytes are the encoded data
-    payload = mess[12:]
+        #The remaining bytes are the encoded data
+        payload = mess[16:]
 
-    #Check if the device is in the same network
-    if GATEWAY_IP_DEVICE_INTERFACE.is_in_same_network(ip_sender) and (ip_sender.ip not in device_list):
-        print('Data received from {}'.format(ip_sender.ip))
-        print("Total elapsed time for receiving the UDP packet: {}".format(finish_time - start_time[0]))
-        decoded_payload = payload.decode('utf-8').split('\n')
-        #Formatting data
-        for entry in decoded_payload:
-            if entry != '':
-                data_str += ip_sender.ip + ' - ' + entry.replace(',', ' - ') + '\n'
-        device_list.append(ip_sender.ip)
-        if len(device_list) == NUMBER_OF_DIFFERENT_CLIENTS:
-            print('Data received from all the devices')
-            print('Sending data to server...')
-            send_data_to_server(data_str)
-            print('\n Listening for incoming data... \n')
-            data_str = ''
-            device_list = []
-    else:
-        print('Message received from a host in another network or has already sent data. Message discarded')
+        #Check if the device is in the same network
+        if GATEWAY_IP_DEVICE_INTERFACE.is_in_same_network(ip_sender) and (ip_sender.ip not in device_list):
+            print('Data received from {}'.format(ip_sender.ip))
+            print("Total elapsed time for receiving the UDP packet: {}".format(finish_time - start_time[0]))
+            decoded_payload = payload.decode('utf-8').split('\n')
+            #Formatting data
+            for entry in decoded_payload:
+                if entry != '':
+                    data_str += ip_sender.ip + ' - ' + entry.replace(',', ' - ') + '\n'
+            device_list.append(ip_sender.ip)
+            if len(device_list) == NUMBER_OF_DIFFERENT_CLIENTS:
+                print('Data received from all the devices')
+                print('Sending data to server...')
+                send_data_to_server(data_str)
+                print('\n Listening for incoming data... \n')
+                data_str = ''
+                device_list = []
+        else:
+            print('Message received from a host in another network or has already sent data. Message discarded')
+except Exception as e:
+    print(e)
+finally:
+    gateway_devices_side.close()
