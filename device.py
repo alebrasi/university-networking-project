@@ -4,7 +4,7 @@ import socket
 import os
 import time
 import struct
-from IP import IP
+from IP_Address import IP_Address
 
 class device:
     def __init__(self, id, ip):
@@ -60,9 +60,9 @@ class device:
 
         Parameters
         ----------
-        gateway_address = IP
-            The IP of the gateway
-        gateway_port = IP
+        gateway_address = IP_Address
+            The IP_Address of the gateway
+        gateway_port = IP_Address
             The port of the gateway
         """
         gateway = (gateway_address, gateway_port)

@@ -1,4 +1,4 @@
-class IP:
+class IP_Address():
     def __octet_splitter(self, ip):
         """
         Split an ip into octets
@@ -15,7 +15,7 @@ class IP:
 
     def __init__(self, ip, subnet):
         """
-        Creates an IP
+        Describes an IP with the associated subnet mask
 
         Attributes
         ----------
@@ -31,12 +31,12 @@ class IP:
 
     def is_in_same_network(self, ip):
         """
-        Checks if an IP is in the same network
+        Checks if an IP_Address is in the same network
 
         Attributes
         ----------
-        ip : IP
-            The IP to check
+        ip : IP_Address
+            The IP_Address to check
         """
         for i in range(4):
             if (self.ip_octets[i] & self.subnet_octets[i]) != (ip.ip_octets[i] & ip.subnet_octets[i]):
@@ -51,7 +51,7 @@ class IP:
 
     def bytes_to_IP(ip_bytes, subnet_bytes):
         """
-        Creates an IP given the ip and the subnet mask in bytes
+        Creates an IP_Address given the ip and the subnet mask in bytes
 
         Attributes
         -----------
@@ -65,4 +65,4 @@ class IP:
         for i in range(4):
             ip_str += str(ip_bytes[i]) + ('.' if i < 3 else '')
             subnet_str += str(subnet_bytes[i]) + ('.' if i < 3 else '')
-        return IP(ip_str, subnet_str)
+        return IP_Address(ip_str, subnet_str)

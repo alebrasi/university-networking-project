@@ -1,4 +1,4 @@
-from IP import IP
+from IP_Address import IP_Address
 from device import device
 
 N_MEASURES = 4
@@ -8,7 +8,7 @@ GATEWAY_ADDRESS = 'localhost'
 GATEWAY_PORT = 8000
 ID = 2
 
-ip = IP(IP_ADDRESS_DEVICE, SUBNET_MASK_DEVICE)
+ip = IP_Address(IP_ADDRESS_DEVICE, SUBNET_MASK_DEVICE)
 
 dev = device(ID, ip)
 
