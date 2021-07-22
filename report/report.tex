@@ -1,0 +1,95 @@
+\documentclass[a4paper, 14pt]{extreport}
+\usepackage{extsizes}
+\usepackage[utf8]{inputenc}
+\usepackage[italian]{babel}
+\usepackage[italian]{cleveref}
+%Per inserire immagini
+\usepackage{graphicx} 
+\usepackage{verbatim}
+\usepackage[legalpaper, margin=1in]{geometry}
+%Per usare titleformat
+\usepackage{titlesec}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage[table]{xcolor}
+\usepackage{makecell} 
+
+\title{Relazione per l'elaborato di Programmazione di Reti}
+\titleformat{\chapter}[display]{\normalfont\bfseries}{}{0pt}{\Large}
+\setcounter{secnumdepth}{0}
+
+\author{Mrclean69}
+
+\begin{document}
+    \maketitle
+    \tableofcontents
+
+    \chapter{Introduzione}
+    La traccia scelta è la numero 1, ovvero realizzare una simulazione di uno scenario IoT 
+    dove ci sono diversi Smart IoT Meter che rilevano la temperatura e umidità del terreno in cui sono installati.
+    Questi si connetteranno una volta al giorno per inviare ad un gateway tramite una connessione UDP tutte le
+    misure fatte durante il giorno.
+    Il gateway, a sua volta, invia tutte le misure raccolte ad un server, il quale mostra su console tutte le misure
+    dei vari device.
+
+    \chapter{Descrizione}
+
+    \section{Device (Smart IoT Meter)}
+    I device sono stati realizzati su 4 moduli separati (\emph{device1.py, device2.py, ...})
+    dentro ai quali sono definiti, medianti costanti, i seguenti dati:
+    \begin{itemize}
+        \item Il numero di misure random (\emph{N\_MEASURES}) che si vogliono generare per poi inviare al gateway
+        \item L'indirizzo IP del device (\emph{IP\_ADDRESS\_DEVICE})
+        \item La subnet mask del device (\emph{SUBNET\_MASK\_DEVICE})
+        \item L'indirizzo del gateway (\emph{GATEWAY\_ADDRESS})
+        \item La porta del gateway (\emph{GATEWAY\_PORT})
+    \end{itemize}
+
+    Successivamente viene creato un oggetto \textbf{IP\_Address} (definito nel modulo \emph{IP\_Address}) 
+    che descrive la configurazione IP del dispositivo (Indirizzo IP e subnet mask). \\
+    In seguito viene creato l'oggetto \textbf{device} al quale viene passato l'\emph{ID} del dispositivo
+    e l' oggetto \emph{IP\_Address} definito prima.
+    Vengono poi chiamate le funzioni \textbf{generate\_random\_measures}, la quale genera delle misure randomiche,
+    la funzione \textbf{print\_info}, la quale stampa le informazioni del dispositivo creato, e la funzione \textbf{send\_data}, la
+    quale invia i dati letti al server.
+    Nella funzione \textbf{send\_data} si creerà un messaggio (codificato) composto nel seguente modo: \\
+    \textbf{ip + subnet mask + tempo di inizio invio del paccheto + misure da inviare}        \\
+    L' \emph{IP} e la \emph{subnet mask} sono codificati in un byte array grazie alla funzione \emph{encode\_ip\_and\_subnet}
+    dichiarata nel modulo \emph{IP\_Address}, il tempo di inizio invio del pacchetto è acquisito grazie alla funzione \emph{perf\_counter}
+    del modulo \emph{time} per poi essere codificato, sempre in byte array con la funzione \emph{pack} contenuta nel modulo 
+    \emph{struct}. Le misure da inviare, invece, vengono lette dal corrispondente \textbf{file csv} per poi essere codificate.
+
+
+    \section{Gateway}
+    L'implementazione del gateway è all'interno del modulo \textbf{gateway.py}.
+    Qua vengono istanziati due oggetti \textbf{IP\_Address} che descrivono le due "interfacce" di rete
+    del gateway, una rivolta verso la rete dei device e una verso la rete del \emph{server}.
+    Verrà creato un socket UDP, con porta specificata nella costante \emph{GATEWAY\_DEVICE\_SIDE\_PORT},
+    al quale poi si collegheranno i vari \textbf{device}.
+    Quando verrà ricevuto un pacchetto da un dispositivo, si procederà a "spacchettarlo" nel seguente modo:
+
+    \begin{itemize}
+        \item I primi \textbf{4} byte contengono l'indirizzo IP del dispositivo
+        \item I successivi \textbf{4} byte contengono la subnet mask del dispositivo
+        \item Gli \textbf{8} byte successivi contengono il tempo di inizio di invio del pacchetto da parte del dispositivo
+        \item I restanti byte contengono le misure inviate
+    \end{itemize}
+
+    Con i primi 8 byte, quindi, si crea l'oggetto \textbf{IP\_Address} del dispositivo che ha inviato i dati
+    grazie alla funzione \textbf{bytes\_to\_IP} (contenuta sempre nel modulo \emph{IP\_Address}).
+    Gli 8 byte del tempo, invece, vengono convertiti in \textbf{double} grazie alla funzione \textbf{unpack}
+    contenuta nel modulo \emph{struct}.
+    Una volta estratti i dati, il gateway verifica se il dispositivo che ha inviato i dati è
+    all'interno della stessa sottorete e, per fare questo, si avvale della funzione
+    \textbf{is\_in\_same\_network} presente nel modulo \emph{IP\_Address}, passandogli l'oggetto
+    \emph{IP\_Address} creato in precedenza.
+    All'interno di questa funzione viene eseguito un \textbf{AND logico} tra l'indirizzo IP e la subnet mask
+    del gateway, in modo da ricavare l'indirizzo di rete, e viene confrontato, a sua volta, con l'indirizzo di rete
+    del dispositivo che ha inviato i dati (ottenuto in modo analogo). Se i due indirizzi di rete sono uguali, il
+    gateway accetterà le misure inviate dal dispositivo, altrimenti le scarterà e mostrerà un messaggio di errore. \\
+    Il gateway ripeterà questa operazione finchè il numero di dispositivi univoci che hanno inviato i dati è
+    uguale alla costante \textbf{NUMBER\_OF\_DIFFERENT\_CLIENTS}.
+    Se un dispositivo che ha già inviato le proprie misure cercherà di rinviarle,
+    il gateway scarterà il messaggio.
+
+\end{document}
