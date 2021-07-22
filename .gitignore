@@ -1,2 +1,5 @@
 __pycache__/
 measures/
+report/
+!report/report.tex
+!report/report.pdf
