@@ -30,9 +30,9 @@ try:
     while True:
         gateway_connection, address = server.accept()
 
-        finish_time = time.perf_counter()
 
         message = gateway_connection.recv(BUFFER_SIZE)
+        finish_time = time.perf_counter()
 
         #The first 4 bytes are the ip address of the sender
         source_ip = message[:4]

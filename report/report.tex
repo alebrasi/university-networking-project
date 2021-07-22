@@ -18,7 +18,7 @@
 \titleformat{\chapter}[display]{\normalfont\bfseries}{}{0pt}{\Large}
 \setcounter{secnumdepth}{0}
 
-\author{Mrclean69}
+\author{Alessandro Brasini}
 
 \begin{document}
     \maketitle
@@ -59,6 +59,7 @@
     del modulo \emph{time} per poi essere codificato, sempre in byte array con la funzione \emph{pack} contenuta nel modulo 
     \emph{struct}. Le misure da inviare, invece, vengono lette dal corrispondente \textbf{file csv} per poi essere codificate.
 
+    \pagebreak
 
     \section{Gateway}
     L'implementazione del gateway è all'interno del modulo \textbf{gateway.py}.
@@ -85,11 +86,61 @@
     \emph{IP\_Address} creato in precedenza.
     All'interno di questa funzione viene eseguito un \textbf{AND logico} tra l'indirizzo IP e la subnet mask
     del gateway, in modo da ricavare l'indirizzo di rete, e viene confrontato, a sua volta, con l'indirizzo di rete
-    del dispositivo che ha inviato i dati (ottenuto in modo analogo). Se i due indirizzi di rete sono uguali, il
-    gateway accetterà le misure inviate dal dispositivo, altrimenti le scarterà e mostrerà un messaggio di errore. \\
-    Il gateway ripeterà questa operazione finchè il numero di dispositivi univoci che hanno inviato i dati è
-    uguale alla costante \textbf{NUMBER\_OF\_DIFFERENT\_CLIENTS}.
-    Se un dispositivo che ha già inviato le proprie misure cercherà di rinviarle,
-    il gateway scarterà il messaggio.
+    del dispositivo che ha inviato i dati (ottenuto in modo analogo). \\
+    Se i due indirizzi di rete sono uguali, il
+    gateway accetterà le misure inviate dal dispositivo (e le formatterà secondo la modalità richiesta), altrimenti le scarterà e mostrerà un messaggio di errore. \\
+    Il gateway ripeterà questa operazione finchè il numero di dispositivi \\ 
+    univoci che hanno inviato i dati è uguale alla costante  \\
+    \textbf{NUMBER\_OF\_DIFFERENT\_CLIENTS}.   \\
+    Se un dispositivo che ha già inviato le proprie misure cercherà di rinviarle, il gateway scarterà il messaggio.
+    Se il dispositivo che ha inviato il pacchetto soddisfa le due condizioni scritte prima
+    (è all'interno della stessa rete e non ha ancora inviato un pacchetto), provvederà a 
+    mostrare sulla console un messaggio di conferma e il tempo impiegato dal pacchetto per 
+    arrivare al gateway (\emph{tempo di inizio di invio del pacchetto - tempo fine ricezione}).
+    Ricevute tutte le misure, il gateway provvederà a stabilire una connessione con il \textbf{server} mediante la
+    creazione di un socket TCP.
+    Una volta stabilita provvederà a comporre il pacchetto in modo analogo a come faceva il \emph{device},
+    quindi \emph{ip + subnet + tempo di inizio di invio del pacchetto + tutte le misure dei device}, 
+    dove questa volta, come ip e subnet utilizzerà quella dell'interfaccia che comunica con il server
+    (\textbf{GATEWAY\_IP\_SERVER\_INTERFACE}).
+    Una volta inviate le misure al server, chiuderà il socket verso il server.
 
+    \pagebreak
+
+    \section{Server}
+    L'implementazione del server è all'interno del modulo \textbf{server.py} \\
+    Viene creato un socket TCP che sta in ascolto sulla porta designata dalla costante \textbf{SERVER\_PORT}.
+    Quando riceverà una richiesta di connessione, quest'ultima verrà accettata e resterà in 
+    attesa di un pacchetto. Quando finirà di ricevere il pacchetto, memorizzerà il tempo
+    attuale e procederà con lo stesso procedimento che esegue il gateway.
+    Se tutto è andato a buon fine, mostrerà su console le misure nel formato indicato.
+
+    \pagebreak
+
+    \chapter{Moduli utilizzati}
+    \begin{itemize}
+        \item time: utilizzato per l'utilizzo del metodo \emph{perf\_counter()} 
+        \item os: utilizzato verificare se esiste 
+        \item csv: utilizzato leggere i dati scritti dai device
+        \item struct: utilizzato per eseguire la conversione di un double in un byte array 
+                    (utilizzato per inviare il tempo di inizio invio del pacchetto al gateway/server)
+        \item sys: utilizzato "uccidere il processo"
+        \item signal: utilizzato aggiungere un \emph{event listener} di quando viene premuta
+                    la combinazioni di tasti \textbf{CTRL-C} in modo poi da richiamare un metodo
+                    che chiude in modo sicuro il socket/connessione aperte.
+        \item random: utilizzato per generare misure e orari random
+        \item datetime: utilizzato per comporre un'orario.
+        \item socket
+    \end{itemize}
+
+    \chapter{Modalità di avvio}
+    Si esegue per primo il modulo \textbf{gateway.py} e poi \textbf{server.py} 
+    (funziona anche il viceversa).
+    Successivamente si avviano i moduli \textbf{device1.py, device2.py, device3.py, device4.py}.
+    E' presente anche un modulo \textbf{device5.py} il quale però ha come subnet mask
+    "255.255.254.0", quindi non è all'interno della stessa sottorete dei device:
+    cercando di eseguire questo modulo, il device invierà il pacchetto al gateway
+    ma quest'ultimo lo scarterà, in quanto non è nella stessa sottorete.
+    Si può modificare anche l'ip in, per esempio, "192.168.2.1" e subnet mask "255.255.255.0"
+    ma verrà sempre prontamente scartato dal gateway.
 \end{document}
