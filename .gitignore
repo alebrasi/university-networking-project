@@ -1,5 +1,9 @@
 __pycache__/
 measures/
-report/
-!report/report.tex
-!report/report.pdf
+report/images/
+*.toc
+*.gz
+*.aux
+*.fls
+*.fdb_latexmk
+*.log

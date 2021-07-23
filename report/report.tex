@@ -29,7 +29,7 @@
     dove ci sono diversi Smart IoT Meter che rilevano la temperatura e umidità del terreno in cui sono installati.
     Questi si connetteranno una volta al giorno per inviare ad un gateway tramite una connessione UDP tutte le
     misure fatte durante il giorno.
-    Il gateway, a sua volta, invia tutte le misure raccolte ad un server, il quale mostra su console tutte le misure
+    Il gateway, a sua volta, invierà tutte le misure raccolte ad un server, il quale mostra su console tutte le misure
     dei vari device.
 
     \chapter{Descrizione}
@@ -43,20 +43,24 @@
         \item La subnet mask del device (\emph{SUBNET\_MASK\_DEVICE})
         \item L'indirizzo del gateway (\emph{GATEWAY\_ADDRESS})
         \item La porta del gateway (\emph{GATEWAY\_PORT})
+        \item Un ID univoco rispetto a tutti i device (\emph{ID}), usato a soli fini di riconoscimento
+                del file di misure che genererà (e successivamente invierà).
     \end{itemize}
 
-    Successivamente viene creato un oggetto \textbf{IP\_Address} (definito nel modulo \emph{IP\_Address}) 
-    che descrive la configurazione IP del dispositivo (Indirizzo IP e subnet mask). \\
+    Successivamente viene creato un oggetto \textbf{IP\_Address} (definito nel modulo \emph{IP\_Address.py}) 
+    che descrive la configurazione IP del dispositivo (Indirizzo IP e subnet mask) e al cui interno sono definite anche
+    varie funzioni di utility, tra le quali un metodo per verificare se un \emph{IP\_Address} passato è all'interno della stessa rete. \\
     In seguito viene creato l'oggetto \textbf{device} al quale viene passato l'\emph{ID} del dispositivo
     e l' oggetto \emph{IP\_Address} definito prima.
-    Vengono poi chiamate le funzioni \textbf{generate\_random\_measures}, la quale genera delle misure randomiche,
+    Vengono poi chiamate le funzioni \textbf{generate\_random\_measures}, la quale genera delle misure random che poi salverà in un 
+    file con il nome \emph{deviceID.csv} (dove ID è il numero univoco del dispositivo),
     la funzione \textbf{print\_info}, la quale stampa le informazioni del dispositivo creato, e la funzione \textbf{send\_data}, la
     quale invia i dati letti al server.
-    Nella funzione \textbf{send\_data} si creerà un messaggio (codificato) composto nel seguente modo: \\
+    Nella funzione \textbf{send\_data} si creerà un messaggio (codificato come byte array) composto nel seguente modo: \\
     \textbf{ip + subnet mask + tempo di inizio invio del paccheto + misure da inviare}        \\
     L' \emph{IP} e la \emph{subnet mask} sono codificati in un byte array grazie alla funzione \emph{encode\_ip\_and\_subnet}
-    dichiarata nel modulo \emph{IP\_Address}, il tempo di inizio invio del pacchetto è acquisito grazie alla funzione \emph{perf\_counter}
-    del modulo \emph{time} per poi essere codificato, sempre in byte array con la funzione \emph{pack} contenuta nel modulo 
+    dichiarata nel modulo \emph{IP\_Address}, il tempo di inizio invio del pacchetto è acquisito grazie alla funzione \emph{perf\_counter},
+    del modulo \emph{time}, per poi essere codificato, sempre in byte array, con la funzione \emph{pack} contenuta nel modulo 
     \emph{struct}. Le misure da inviare, invece, vengono lette dal corrispondente \textbf{file csv} per poi essere codificate.
 
     \pagebreak
@@ -64,9 +68,9 @@
     \section{Gateway}
     L'implementazione del gateway è all'interno del modulo \textbf{gateway.py}.
     Qua vengono istanziati due oggetti \textbf{IP\_Address} che descrivono le due "interfacce" di rete
-    del gateway, una rivolta verso la rete dei device e una verso la rete del \emph{server}.
-    Verrà creato un socket UDP, con porta specificata nella costante \emph{GATEWAY\_DEVICE\_SIDE\_PORT},
-    al quale poi si collegheranno i vari \textbf{device}.
+    del gateway, una rivolta verso la rete dei device e una verso la rete del \emph{server}. \\
+    Verrà creato un socket UDP, con porta specificata nella costante \\
+    \emph{GATEWAY\_DEVICE\_SIDE\_PORT}, al quale poi si collegheranno i vari \textbf{device}.
     Quando verrà ricevuto un pacchetto da un dispositivo, si procederà a "spacchettarlo" nel seguente modo:
 
     \begin{itemize}
@@ -96,14 +100,14 @@
     Se il dispositivo che ha inviato il pacchetto soddisfa le due condizioni scritte prima
     (è all'interno della stessa rete e non ha ancora inviato un pacchetto), provvederà a 
     mostrare sulla console un messaggio di conferma e il tempo impiegato dal pacchetto per 
-    arrivare al gateway (\emph{tempo di inizio di invio del pacchetto - tempo fine ricezione}).
+    arrivare al gateway (calcolato nel seguente modo: \emph{tempo di inizio di invio del pacchetto - tempo fine ricezione}).
     Ricevute tutte le misure, il gateway provvederà a stabilire una connessione con il \textbf{server} mediante la
     creazione di un socket TCP.
     Una volta stabilita provvederà a comporre il pacchetto in modo analogo a come faceva il \emph{device},
     quindi \emph{ip + subnet + tempo di inizio di invio del pacchetto + tutte le misure dei device}, 
-    dove questa volta, come ip e subnet utilizzerà quella dell'interfaccia che comunica con il server
+    dove, questa volta, come ip e subnet utilizzerà quella dell'interfaccia che comunica con il server
     (\textbf{GATEWAY\_IP\_SERVER\_INTERFACE}).
-    Una volta inviate le misure al server, chiuderà il socket verso il server.
+    Una volta inviate le misure al server, chiuderà il socket verso quest'ultimo.
 
     \pagebreak
 
@@ -119,15 +123,17 @@
 
     \chapter{Moduli utilizzati}
     \begin{itemize}
-        \item time: utilizzato per l'utilizzo del metodo \emph{perf\_counter()} 
-        \item os: utilizzato verificare se esiste 
+        \item time: per l'utilizzo del metodo \emph{perf\_counter()} 
+        \item os: utilizzato verificare se esiste la cartella \emph{measures}. Qua verranno salvate, in diversi file, le misure
+                    generate dai device. 
         \item csv: utilizzato leggere i dati scritti dai device
         \item struct: utilizzato per eseguire la conversione di un double in un byte array 
                     (utilizzato per inviare il tempo di inizio invio del pacchetto al gateway/server)
-        \item sys: utilizzato "uccidere il processo"
-        \item signal: utilizzato aggiungere un \emph{event listener} di quando viene premuta
+        \item sys: utilizzato per "uccidere il processo"
+        \item signal: utilizzato per aggiungere un \emph{event listener} di quando viene premuta
                     la combinazioni di tasti \textbf{CTRL-C} in modo poi da richiamare un metodo
-                    che chiude in modo sicuro il socket/connessione aperte.
+                    che chiude in modo sicuro il socket/connessione aperte all'interno del \emph{gateway} e 
+                    \emph{server}.
         \item random: utilizzato per generare misure e orari random
         \item datetime: utilizzato per comporre un'orario.
         \item socket
@@ -135,12 +141,14 @@
 
     \chapter{Modalità di avvio}
     Si esegue per primo il modulo \textbf{gateway.py} e poi \textbf{server.py} 
-    (funziona anche il viceversa).
+    (funziona anche il viceversa e possono essere eseguiti anche contemporaneamente).
     Successivamente si avviano i moduli \textbf{device1.py, device2.py, device3.py, device4.py}.
-    E' presente anche un modulo \textbf{device5.py} il quale però ha come subnet mask
+    E' presente anche un modulo \textbf{device5.py}, il quale, però, ha come subnet mask
     "255.255.254.0", quindi non è all'interno della stessa sottorete dei device:
-    cercando di eseguire questo modulo, il device invierà il pacchetto al gateway
-    ma quest'ultimo lo scarterà, in quanto non è nella stessa sottorete.
-    Si può modificare anche l'ip in, per esempio, "192.168.2.1" e subnet mask "255.255.255.0"
-    ma verrà sempre prontamente scartato dal gateway.
+    eseguendo questo modulo, il device invierà il pacchetto al gateway
+    ma, quest'ultimo, lo scarterà in quanto non è all'interno della stessa sottorete.
+    Si può modificare anche l'IP in, per esempio, "192.168.2.1" e subnet mask "255.255.255.0"
+    ma verrà sempre prontamente scartato dal gateway. \\
+    La stessa cosa la si può emulare modificando l'IP e/o subnet mask dell'interfaccia del gateway rivolta verso il server 
+    (in modo che non faccia più parte della stessa sottorete del server), quest'ultimo scarterà il messaggio.
 \end{document}
